@@ -139,6 +139,23 @@ cp frontend/.env.example frontend/.env
 
 ---
 
+## Testing
+
+Backend unit tests cover the numerical engines (Monte Carlo simulation and MPT
+risk metrics) using deterministic synthetic market data, so they run fast and
+offline:
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+CI runs the backend tests and the frontend production build on every push and
+pull request (see `.github/workflows/ci.yml`).
+
+---
+
 ## Deployment
 
 ### Option A — Docker Compose (single host, recommended)
