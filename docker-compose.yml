@@ -1,0 +1,33 @@
+# One-command local/production-like startup:
+#   docker compose up --build
+# Frontend -> http://localhost:5173   Backend -> http://localhost:8000/docs
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: sqlite:////app/data/portfolio.db
+      ALPHA_VANTAGE_API_KEY: ${ALPHA_VANTAGE_API_KEY:-}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-only-change-me}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+    volumes:
+      # Persist the SQLite DB across container restarts
+      - backend_data:/app/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Browser talks to the backend on the host, not the compose network name
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api}
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  backend_data:

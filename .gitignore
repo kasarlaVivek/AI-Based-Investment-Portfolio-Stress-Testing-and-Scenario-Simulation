@@ -22,3 +22,25 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Secrets & environment
+.env
+.env.*
+!.env.example
+
+# Local data & generated artifacts
+*.db
+*.db.*
+*.sqlite3
+backend/app/cache/
+
+# Build output
+build/
