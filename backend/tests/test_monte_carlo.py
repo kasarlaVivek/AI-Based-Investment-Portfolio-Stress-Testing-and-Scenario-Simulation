@@ -63,10 +63,9 @@ async def test_percentiles_are_ordered():
 
 
 async def test_crash_scenario_is_riskier_than_bull():
-    # The crash scenario applies a 2.2x volatility multiplier, so its tail risk
-    # is far worse than the bull scenario: deeper worst-case loss and larger
-    # max drawdown. (Note: the *median* is not a reliable discriminator here,
-    # because a sum of high-volatility lognormal GBM paths is right-skewed.)
+    # The crash scenario must be unambiguously worse than the bull scenario on
+    # every dimension: lower median ROI, higher probability of loss, deeper
+    # worst-case loss, and larger max drawdown.
     np.random.seed(7)
     bull = await monte_carlo.run_portfolio_monte_carlo(
         HOLDINGS, "BULL_MARKET", num_simulations=500, years=10
@@ -75,8 +74,29 @@ async def test_crash_scenario_is_riskier_than_bull():
     crash = await monte_carlo.run_portfolio_monte_carlo(
         HOLDINGS, "MARKET_CRASH", num_simulations=500, years=10
     )
+    assert crash["roi_10y"] < bull["roi_10y"]
+    assert crash["prob_loss_10y"] >= bull["prob_loss_10y"]
     assert crash["worst_case_return"] < bull["worst_case_return"]
     assert crash["max_drawdown"] > bull["max_drawdown"]
+
+
+async def test_scenarios_are_monotonically_ordered():
+    # Median ROI and probability of loss must be monotonic across the regime
+    # severity ordering. This guards against the regression where a large
+    # volatility multiplier inflated the crash median above calmer scenarios.
+    order = ["BULL_MARKET", "NORMAL_MARKET", "HIGH_INFLATION", "BEAR_MARKET", "MARKET_CRASH"]
+    rois, plosses = [], []
+    for scenario in order:
+        np.random.seed(7)
+        res = await monte_carlo.run_portfolio_monte_carlo(
+            HOLDINGS, scenario, num_simulations=500, years=10
+        )
+        rois.append(res["roi_10y"])
+        plosses.append(res["prob_loss_10y"])
+    # Median ROI strictly decreasing as the regime worsens.
+    assert all(rois[i] > rois[i + 1] for i in range(len(rois) - 1)), rois
+    # Probability of loss non-decreasing as the regime worsens.
+    assert all(plosses[i] <= plosses[i + 1] for i in range(len(plosses) - 1)), plosses
 
 
 async def test_unknown_scenario_defaults_to_normal():

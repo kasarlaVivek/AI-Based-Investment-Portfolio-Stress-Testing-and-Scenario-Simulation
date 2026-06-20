@@ -3,30 +3,39 @@ import pandas as pd
 from typing import List, Dict, Any, Tuple
 from .market_data import fetch_historical_data
 
+# Each scenario is defined by an absolute *target annualized return* for the
+# market regime (annual_drift) and a volatility multiplier (vol_mult) applied to
+# the historical covariance. annual_drift is used directly rather than as a
+# multiplier on each asset's historical mean: a multiplier-based crash applied
+# to assets with positive historical returns only produces a mild negative
+# drift, which the scenario's large volatility then overwhelms via the right
+# skew of (summed) lognormal GBM paths — making a "crash" look benign on the
+# median and probability-of-loss metrics. Absolute regime drifts keep the
+# scenarios correctly ordered (Bull > Normal > High Inflation > Bear > Crash).
 SCENARIOS = {
     "BULL_MARKET": {
         "name": "Bull Market",
-        "drift_mult": 1.5,
+        "annual_drift": 0.18,
         "vol_mult": 0.8
     },
     "NORMAL_MARKET": {
         "name": "Normal Market",
-        "drift_mult": 1.0,
+        "annual_drift": 0.08,
         "vol_mult": 1.0
     },
     "BEAR_MARKET": {
         "name": "Bear Market",
-        "drift_mult": 0.3,
+        "annual_drift": -0.12,
         "vol_mult": 1.4
     },
     "MARKET_CRASH": {
         "name": "Market Crash",
-        "drift_mult": -0.5,
+        "annual_drift": -0.35,
         "vol_mult": 2.2
     },
     "HIGH_INFLATION": {
         "name": "High Inflation",
-        "drift_mult": 0.6,
+        "annual_drift": 0.01,
         "vol_mult": 1.2
     }
 }
@@ -77,15 +86,16 @@ async def run_portfolio_monte_carlo(
     # Check if we have enough returns data
     n_assets = len(symbols)
     if returns_df.empty or len(returns_df) < 5:
-        # Fallback to independent returns and standard volatilities if returns cannot align
-        mean_returns = np.array([0.0003 for _ in range(n_assets)]) # ~8% annualized
+        # Fallback to a generic volatility structure if returns cannot align
         cov_matrix = np.diag([0.015**2 for _ in range(n_assets)]) # ~24% volatility
     else:
-        mean_returns = returns_df.mean().values
         cov_matrix = returns_df.cov().values
 
-    # Apply scenario multipliers to drift (mean daily returns) and volatility (covariance)
-    drift = mean_returns * 252 * scenario["drift_mult"]  # Annualized drift
+    # Scenario drift is an absolute target annualized return for the regime,
+    # applied uniformly across assets (see SCENARIOS comment above for why we use
+    # an absolute drift rather than a multiplier on historical means). The
+    # historical covariance is preserved and scaled by the volatility multiplier.
+    drift = np.full(n_assets, scenario["annual_drift"])  # Annualized drift
     # Covariance scales with square of volatility multiplier
     covariance = cov_matrix * 252 * (scenario["vol_mult"] ** 2)  # Annualized covariance
     
