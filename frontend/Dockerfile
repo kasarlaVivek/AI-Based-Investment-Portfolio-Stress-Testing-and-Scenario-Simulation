@@ -17,7 +17,10 @@ RUN npm run build
 
 # Stage 2: serve with nginx
 FROM nginx:alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Templated so the official nginx entrypoint can envsubst ${PORT} at
+# container start (Railway/Render inject a dynamic PORT, not always 80).
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
+ENV PORT=80
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
