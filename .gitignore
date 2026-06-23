@@ -44,3 +44,7 @@ backend/app/cache/
 
 # Build output
 build/
+
+# Railway CLI
+.railway/
+.railway-config-pull-*/

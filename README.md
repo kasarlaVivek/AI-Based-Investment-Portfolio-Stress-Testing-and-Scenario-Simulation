@@ -2,6 +2,11 @@
 
 An advanced full-stack investment analytics platform designed to stress-test stock portfolios under various macroeconomic scenarios. The system uses a **FastAPI** backend to run multi-asset **Monte Carlo simulations** (preserving covariance correlations via Cholesky Decomposition), computes Modern Portfolio Theory (MPT) risk statistics, and serves optimization suggestions to a modern **React (JavaScript + Tailwind CSS)** frontend.
 
+## Live Demo
+
+* **Frontend**: <https://frontend-production-0001.up.railway.app>
+* **Backend API + docs**: <https://ai-based-investment-portfolio-stress-testing-and-production.up.railway.app/docs>
+
 ---
 
 ## Key Features
